@@ -102,7 +102,7 @@ def run_streamlit():
 
 def check_environment():
     """Check if required environment variables are set."""
-    required_vars = ["OPENAI_API_KEY", "MONGODB_URI"]
+    required_vars = ["LLM_API_KEY", "MONGODB_URI"]
     missing_vars = []
 
     for var in required_vars:

@@ -84,7 +84,7 @@ def main():
         st.header("ℹ️ About")
         st.info(f"""
         This application uses:
-        - **{os.getenv('OPENAI_MODEL_NAME', 'gpt-4o')}** for intelligent query processing
+        - **{os.getenv('LLM_MODEL_NAME', 'llama3.1')}** for intelligent query processing
         - **MCP Server** for tool routing
         - **MongoDB** for CVE data storage
         - **Jinja2** for beautiful templates
@@ -93,10 +93,10 @@ def main():
         st.divider()
 
         # Connection status
-        if os.getenv("OPENAI_API_KEY"):
-            st.success("✅ OpenAI API Key configured")
+        if os.getenv("LLM_API_KEY"):
+            st.success("✅ LLM API Key configured")
         else:
-            st.error("❌ OpenAI API Key missing")
+            st.error("❌ LLM API Key missing")
 
         if os.getenv("MONGODB_URI"):
             st.success("✅ MongoDB configured")
@@ -105,9 +105,9 @@ def main():
 
         # Model info
         st.divider()
-        st.caption(f"🤖 Model: {os.getenv('OPENAI_MODEL_NAME', 'gpt-4o')}")
-        if os.getenv('OPENAI_BASE_URL') != "https://api.openai.com/v1":
-            st.caption(f"🔗 Custom endpoint configured")
+        st.caption(f"🤖 Model: {os.getenv('LLM_MODEL_NAME', 'llama3.1')}")
+        if os.getenv('LLM_BASE_URL') and os.getenv('LLM_BASE_URL') != "https://api.openai.com/v1":
+            st.caption(f"🔗 Custom endpoint: {os.getenv('LLM_BASE_URL')}")
 
     # Main content area
     col1, col2 = st.columns([2, 1])

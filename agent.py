@@ -6,7 +6,7 @@ This agent can handle user queries and route them to appropriate MCP tools.
 import os
 import json
 import asyncio
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from openai import OpenAI
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
@@ -14,13 +14,12 @@ from mcp.client.stdio import stdio_client
 from mcp_config import mcp_config, MCPServerConfig
 from prompts import get_system_prompt
 
-# Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client with configurable base URL
-openai_client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+# Initialize LLM client (supports OpenAI-compatible endpoints like Ollama)
+llm_client = OpenAI(
+    api_key=os.getenv("LLM_API_KEY", "fake-key"),
+    base_url=os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
 )
 
 
@@ -28,22 +27,15 @@ class CVEAgent:
     """
     An LLM-powered agent that acts as both a function agent and MCP client.
     It intelligently routes user queries to the appropriate CVE query tools.
-    Supports multiple MCP servers and configurable system prompts.
     """
 
     def __init__(self, system_prompt_type: str = "default", model_name: Optional[str] = None):
-        """
-        Initialize the CVE Agent.
-
-        Args:
-            system_prompt_type: Type of system prompt to use (default, concise, detailed, analytics)
-            model_name: OpenAI model name (defaults to env variable)
-        """
-        self.model = model_name or os.getenv("OPENAI_MODEL_NAME", "gpt-4o")
+        """Initialize the CVE Agent."""
+        self.model = model_name or os.getenv("LLM_MODEL_NAME", "llama3.1")
         self.system_prompt = get_system_prompt(system_prompt_type)
         self.sessions: Dict[str, ClientSession] = {}
         self.available_tools: List[Dict] = []
-        self.server_contexts: Dict[str, tuple] = {}  # Store contexts for cleanup
+        self.server_contexts: Dict[str, Tuple] = {}
 
         print(f"🤖 Agent initialized with model: {self.model}")
         print(f"📝 Using system prompt: {system_prompt_type}")
@@ -84,16 +76,13 @@ class CVEAgent:
             env=None
         )
 
-        # Store the context managers
         stdio_context = stdio_client(server_params)
         stdio, write = await stdio_context.__aenter__()
 
         session_context = ClientSession(stdio, write)
         session = await session_context.__aenter__()
-
         await session.initialize()
 
-        # List available tools from this server
         tools_response = await session.list_tools()
         server_tools = [
             {
@@ -103,7 +92,7 @@ class CVEAgent:
                     "description": f"[{config.name}] {tool.description}",
                     "parameters": tool.inputSchema
                 },
-                "_server": config.name  # Track which server provides this tool
+                "_server": config.name
             }
             for tool in tools_response.tools
         ]
@@ -123,109 +112,80 @@ class CVEAgent:
             except Exception as e:
                 print(f"  ⚠️  Error disconnecting from {server_name}: {e}")
 
-    def convert_tools_to_openai_format(self) -> List[Dict]:
-        """Convert MCP tools to OpenAI's tool format."""
-        # Remove internal _server field before sending to OpenAI
-        return [
-            {k: v for k, v in tool.items() if k != "_server"}
-            for tool in self.available_tools
-        ]
+    def get_tools_for_llm(self) -> List[Dict]:
+        """Convert MCP tools to LLM-compatible tool format."""
+        return [{k: v for k, v in tool.items() if k != "_server"} for tool in self.available_tools]
 
     async def process_tool_call(self, tool_name: str, tool_input: Dict[str, Any]) -> str:
         """Execute a tool call via the appropriate MCP server."""
-        # Find which server provides this tool
-        server_name = None
-        for tool in self.available_tools:
-            if tool["function"]["name"] == tool_name:
-                server_name = tool.get("_server")
-                break
+        server_name = next((tool.get("_server") for tool in self.available_tools
+                           if tool["function"]["name"] == tool_name), None)
 
         if not server_name or server_name not in self.sessions:
             return f"Error: Tool {tool_name} not found or server not connected"
 
-        session = self.sessions[server_name]
-        result = await session.call_tool(tool_name, tool_input)
+        result = await self.sessions[server_name].call_tool(tool_name, tool_input)
 
-        # Extract text content from result
-        if result.content:
-            return "\n".join([
-                item.text if hasattr(item, 'text') else str(item)
-                for item in result.content
-            ])
-        return "No result returned"
+        return "\n".join([
+            item.text if hasattr(item, 'text') else str(item)
+            for item in result.content
+        ]) if result.content else "No result returned"
 
-    async def chat(self, user_query: str, max_iterations: int = 5) -> tuple[str, list]:
+    async def chat(self, user_query: str, max_iterations: int = 5) -> Tuple[str, List[Dict]]:
         """
         Process user query using LLM with tool calling capabilities.
-        The agent will iteratively call tools as needed to answer the query.
         Returns: (response_text, tool_results_list)
         """
         messages = [
-            {
-                "role": "system",
-                "content": self.system_prompt
-            },
-            {
-                "role": "user",
-                "content": user_query
-            }
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": user_query}
         ]
 
-        tools = self.convert_tools_to_openai_format()
-        all_tool_results = []  # Store all raw tool results for formatting
+        tools = self.get_tools_for_llm()
+        all_tool_results = []
 
         for iteration in range(max_iterations):
             print(f"\n--- Iteration {iteration + 1} ---")
 
-            # Call OpenAI with tool use
-            response = openai_client.chat.completions.create(
+            response = llm_client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 tools=tools,
                 tool_choice="auto"
             )
 
-            response_message = response.choices[0].message
-            print(f"Finish reason: {response.choices[0].finish_reason}")
+            choice = response.choices[0]
+            print(f"Finish reason: {choice.finish_reason}")
 
-            # Check if we're done
-            if response.choices[0].finish_reason == "stop":
-                return response_message.content, all_tool_results
+            if choice.finish_reason == "stop":
+                return choice.message.content, all_tool_results
 
-            # Process tool calls
-            if response_message.tool_calls:
-                # Add assistant's response to messages
-                messages.append(response_message)
+            if choice.message.tool_calls:
+                messages.append(choice.message)
 
-                # Execute each tool call
-                for tool_call in response_message.tool_calls:
+                for tool_call in choice.message.tool_calls:
                     tool_name = tool_call.function.name
                     tool_input = json.loads(tool_call.function.arguments)
 
                     print(f"Calling tool: {tool_name}")
                     print(f"Tool input: {json.dumps(tool_input, indent=2)}")
 
-                    # Execute tool via MCP
                     tool_result = await self.process_tool_call(tool_name, tool_input)
-
                     print(f"Tool result preview: {tool_result[:200]}...")
 
-                    # Store raw tool results for Jinja2 formatting
                     all_tool_results.append({
                         "tool_name": tool_name,
                         "tool_input": tool_input,
                         "tool_result": tool_result
                     })
 
-                    # Add tool result to messages
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
                         "content": tool_result
                     })
             else:
-                # Unexpected finish reason
-                return f"Unexpected finish reason: {response.choices[0].finish_reason}", all_tool_results
+                return f"Unexpected finish reason: {choice.finish_reason}", all_tool_results
 
         return "Max iterations reached without completing the query.", all_tool_results
 
