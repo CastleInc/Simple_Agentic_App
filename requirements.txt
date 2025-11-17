@@ -1,0 +1,7 @@
+openai>=1.0.0
+pymongo>=4.6.0
+python-dotenv>=1.0.0
+mcp>=0.9.0
+fastmcp>=2.13.0
+streamlit>=1.28.0
+jinja2>=3.1.0

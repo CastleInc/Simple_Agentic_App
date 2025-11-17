@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .cve-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 5px solid {{ severity_color }};
+        }
+
+        .cve-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cve-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .severity-badge {
+            background: {{ severity_color }};
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .cvss-score {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .cvss-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: {{ severity_color }};
+        }
+
+        .cve-title {
+            font-size: 18px;
+            color: #34495e;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+
+        .cve-description {
+            color: #555;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        .cve-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .affected-products {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .solution {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .exploit-warning {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cve-card">
+        <div class="cve-header">
+            <div class="cve-number">{{ cve_number }}</div>
+            <div class="severity-badge">{{ severity }}</div>
+        </div>
+
+        <div class="cve-title">{{ cve_title }}</div>
+
+        <div class="cvss-score">
+            <div style="font-size: 14px; color: #666;">CVSS Score</div>
+            <div class="cvss-number">{{ cvss_score }}</div>
+        </div>
+
+        <div class="cve-description">
+            {{ description }}
+        </div>
+
+        {% if exploit_exists %}
+        <div class="exploit-warning">
+            <span style="font-size: 24px;">⚠️</span>
+            <strong>Exploit Exists - High Priority</strong>
+        </div>
+        {% endif %}
+
+        {% if cisa_key %}
+        <div class="exploit-warning" style="background: #d1ecf1; border-color: #0c5460;">
+            <span style="font-size: 24px;">🔐</span>
+            <strong>CISA Known Exploited Vulnerability</strong>
+        </div>
+        {% endif %}
+
+        <div class="cve-details">
+            <div class="detail-item">
+                <div class="detail-label">Attack Type</div>
+                <div class="detail-value">{{ attack_type }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Location</div>
+                <div class="detail-value">{{ location }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Impact</div>
+                <div class="detail-value">{{ impact }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Remediation Level</div>
+                <div class="detail-value">{{ remediation_level }}</div>
+            </div>
+        </div>
+
+        {% if affected_products %}
+        <div class="affected-products">
+            <strong>📦 Affected Products:</strong><br>
+            {{ affected_products }}
+        </div>
+        {% endif %}
+
+        {% if solution %}
+        <div class="solution">
+            <strong>✅ Solution:</strong><br>
+            {{ solution }}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+
