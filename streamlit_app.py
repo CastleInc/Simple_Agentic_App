@@ -5,12 +5,20 @@ Streamlit Web Interface for CVE Query Agent
 import streamlit as st
 import asyncio
 import os
-import json
-from agent import CVEAgent
+from agent import MCPClient
 from dotenv import load_dotenv
 from jinja_renderer import JinjaRenderer
 from styles import get_custom_css
 from prompts import get_system_prompt
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Apply nest_asyncio to allow nested event loops in Streamlit
+import nest_asyncio
+nest_asyncio.apply()
 
 # Load environment variables
 load_dotenv()
@@ -28,6 +36,56 @@ renderer = JinjaRenderer()
 
 # Apply custom CSS
 st.markdown(get_custom_css(), unsafe_allow_html=True)
+
+
+# Initialize session state for MCPClient
+if 'mcp_client' not in st.session_state:
+    st.session_state.mcp_client = None
+if 'agent_ready' not in st.session_state:
+    st.session_state.agent_ready = False
+
+
+def run_async(coro):
+    """Helper function to run async code in Streamlit."""
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    if loop.is_running():
+        # If loop is already running (Streamlit context), use nest_asyncio
+        return loop.run_until_complete(coro)
+    else:
+        return asyncio.run(coro)
+
+
+async def initialize_agent():
+    """Initialize the MCP agent if not already initialized."""
+    if st.session_state.mcp_client is None or not st.session_state.agent_ready:
+        try:
+            logger.info("Initializing MCP Client...")
+            client = MCPClient()
+            await client.setup_agent()
+            st.session_state.mcp_client = client
+            st.session_state.agent_ready = True
+            logger.info("✓ MCP Client initialized successfully")
+            return client
+        except Exception as e:
+            logger.error(f"Failed to initialize agent: {e}")
+            raise
+    return st.session_state.mcp_client
+
+
+async def process_query_async(query: str):
+    """Process a query using the MCP client."""
+    try:
+        client = await initialize_agent()
+        response = await client.process_query(query)
+        return response
+    except Exception as e:
+        logger.error(f"Error processing query: {e}")
+        raise
 
 
 def main():
@@ -93,10 +151,10 @@ def main():
         st.divider()
 
         # Connection status
-        if os.getenv("LLM_API_KEY"):
-            st.success("✅ LLM API Key configured")
+        if os.getenv("LLM_BASE_URL"):
+            st.success("✅ LLM endpoint configured")
         else:
-            st.error("❌ LLM API Key missing")
+            st.warning("⚠️ LLM endpoint not set")
 
         if os.getenv("MONGODB_URI"):
             st.success("✅ MongoDB configured")
@@ -108,6 +166,24 @@ def main():
         st.caption(f"🤖 Model: {os.getenv('LLM_MODEL_NAME', 'llama3.1')}")
         if os.getenv('LLM_BASE_URL') and os.getenv('LLM_BASE_URL') != "https://api.openai.com/v1":
             st.caption(f"🔗 Custom endpoint: {os.getenv('LLM_BASE_URL')}")
+
+        # Agent status
+        if st.session_state.agent_ready:
+            if st.session_state.mcp_client:
+                tools_count = len(st.session_state.mcp_client.tools)
+                st.success(f"✅ Agent ready ({tools_count} tools)")
+        else:
+            st.info("🔄 Agent will initialize on first query")
+
+        # Add a button to manually initialize
+        if st.button("🚀 Initialize Agent Now"):
+            with st.spinner("Initializing agent..."):
+                try:
+                    run_async(initialize_agent())
+                    st.success("✅ Agent initialized!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Failed to initialize: {str(e)}")
 
     # Main content area
     col1, col2 = st.columns([2, 1])
@@ -149,8 +225,8 @@ def main():
 
         st.markdown("""
         <div class="stat-card">
-            <h3 style="color: #764ba2; margin: 0;">OpenAI</h3>
-            <p style="margin: 0;">Powered by GPT-4</p>
+            <h3 style="color: #764ba2; margin: 0;">Ollama</h3>
+            <p style="margin: 0;">Powered by Llama 3.1</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -158,86 +234,47 @@ def main():
     if submit_button and user_query:
         with st.spinner("🔄 Processing your query..."):
             try:
-                # Define async function to run the entire process
-                async def run_query_with_agent():
-                    # Use agent with selected system prompt
-                    async with CVEAgent(system_prompt_type=prompt_type) as agent:
-                        response, tool_results = await agent.chat(user_query)
-                        return response, tool_results
-
-                # Create and run event loop
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                response, tool_results = loop.run_until_complete(run_query_with_agent())
-                loop.close()
+                # Process the query using our helper function
+                response = run_async(process_query_async(user_query))
 
                 # Display results
                 st.success("✅ Query completed!")
                 st.divider()
 
-                # Check if we have tool results with CVE data
-                has_cve_data = False
+                # Render the response using Jinja2 templates
+                st.subheader("🤖 AI Analysis")
 
-                for tool_result in tool_results:
-                    raw_result = tool_result.get("tool_result", "")
+                try:
+                    # Use the renderer to create beautiful HTML from JSON response
+                    rendered_html = renderer.render_response(response)
 
-                    # Try to parse the tool result as JSON
-                    try:
-                        result_data = json.loads(raw_result)
+                    # Use st.html() for better HTML rendering (Streamlit 1.30+)
+                    # or use components.html() for older versions
+                    import streamlit.components.v1 as components
+                    components.html(rendered_html, height=800, scrolling=True)
 
-                        # Check if it's a single CVE
-                        if isinstance(result_data, dict) and 'cve_number' in result_data:
-                            has_cve_data = True
-                            st.subheader("📄 CVE Details")
-                            # Use components.html to properly render HTML without showing raw code
-                            import streamlit.components.v1 as components
-                            cve_html = renderer.render_cve_card(result_data)
-                            components.html(cve_html, height=800, scrolling=True)
-
-                        # Check if it's multiple CVEs
-                        elif isinstance(result_data, dict) and 'results' in result_data:
-                            has_cve_data = True
-                            st.subheader(f"📄 Found {result_data.get('count', 0)} CVE(s)")
-
-                            import streamlit.components.v1 as components
-                            for cve in result_data.get('results', []):
-                                cve_html = renderer.render_cve_card(cve)
-                                components.html(cve_html, height=800, scrolling=True)
-
-                        # For statistics or other data
-                        elif isinstance(result_data, dict) and not has_cve_data:
-                            import streamlit.components.v1 as components
-                            response_html = renderer.render_response(user_query, json.dumps(result_data, indent=2))
-                            components.html(response_html, height=400, scrolling=True)
-                            has_cve_data = True
-
-                    except json.JSONDecodeError:
-                        continue
-
-                # If no CVE data was formatted, show the LLM's text response
-                if not has_cve_data and response:
-                    st.subheader("🤖 AI Analysis")
-                    st.markdown(response)
-
-                # Also show the LLM's analysis/summary if we formatted CVE cards
-                elif has_cve_data and response:
-                    st.divider()
-                    st.subheader("🤖 AI Analysis")
+                except Exception as render_error:
+                    logger.warning(f"Failed to render with template: {render_error}")
+                    logger.exception(render_error)
+                    # Fallback to displaying as markdown if rendering fails
                     st.markdown(response)
 
                 # Show raw response in expander
-                with st.expander("🔍 View Raw Data"):
-                    st.subheader("Tool Results:")
-                    for i, tool_result in enumerate(tool_results, 1):
-                        st.write(f"**Tool {i}: {tool_result['tool_name']}**")
-                        st.code(tool_result['tool_result'], language="json")
-
-                    st.subheader("LLM Response:")
-                    st.write(response)
+                with st.expander("🔍 View Raw Response"):
+                    st.code(response, language="json")
 
             except Exception as e:
                 st.error(f"❌ Error: {str(e)}")
-                st.exception(e)
+                logger.exception("Query processing failed")
+
+                # Show helpful error message
+                st.info("""
+                **Troubleshooting tips:**
+                - Make sure MongoDB is running
+                - Check that Ollama is running: `ollama serve`
+                - Verify your .env configuration
+                - Try reinitializing the agent using the sidebar button
+                """)
 
     # Example queries section
     st.divider()

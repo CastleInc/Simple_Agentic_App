@@ -38,15 +38,41 @@ def print_banner():
 
 async def run_interactive_agent():
     """Run the agent in interactive mode."""
-    from agent import CVEAgent
+    from agent import MCPClient
+    import logging
 
-    agent = CVEAgent()
-    await agent.run_interactive()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    client = MCPClient()
+    print("\n🤖 Starting interactive agent...")
+    print("Type your CVE-related queries below.")
+    print("Type 'quit' or 'exit' to stop.\n")
+
+    while True:
+        try:
+            user_input = input("\n🧑 You: ").strip()
+            if user_input.lower() in {"quit", "exit", "q"}:
+                print("\nGoodbye!")
+                break
+            if not user_input:
+                continue
+
+            print("\n🤖 Agent: Processing your query...")
+            response = await client.process_query(user_input)
+            print(f"\n🤖 Agent: {response}")
+        except KeyboardInterrupt:
+            print("\n\nGoodbye!")
+            break
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
 
 
 async def run_demo_queries():
     """Run demonstration queries to showcase capabilities."""
-    from agent import CVEAgent
+    from agent import MCPClient
 
     print("\n🎬 Running Demo Queries...\n")
 
@@ -57,23 +83,22 @@ async def run_demo_queries():
         "Search for CVEs related to 'Directory Traversal'",
     ]
 
-    agent = CVEAgent()
+    client = MCPClient()
 
-    async with await agent.connect_to_mcp_server():
-        for i, query in enumerate(demo_queries, 1):
-            print(f"\n{'='*70}")
-            print(f"Demo Query {i}: {query}")
-            print('='*70)
+    for i, query in enumerate(demo_queries, 1):
+        print(f"\n{'='*70}")
+        print(f"Demo Query {i}: {query}")
+        print('='*70)
 
-            try:
-                response = await agent.chat(query)
-                print(f"\n✅ Response:\n{response}")
-            except Exception as e:
-                print(f"\n❌ Error: {str(e)}")
+        try:
+            response = await client.process_query(query)
+            print(f"\n✅ Response:\n{response}")
+        except Exception as e:
+            print(f"\n❌ Error: {str(e)}")
 
-            if i < len(demo_queries):
-                print("\n⏸️  Press Enter for next query...")
-                input()
+        if i < len(demo_queries):
+            print("\n⏸️  Press Enter for next query...")
+            input()
 
 
 def run_mcp_server():

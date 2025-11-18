@@ -1,0 +1,15 @@
+<div style="margin: 20px 0;">
+    <h3 style="margin: 0 0 15px 0; font-size: 24px; color: #1f2937;">Found {{ count }} CVEs</h3>
+    {% if severity %}
+    <p style="margin: 0 0 20px 0;">
+        <span style="background: {{ severity|format_severity_color }}; color: white; padding: 6px 16px; border-radius: 12px; font-size: 14px; font-weight: bold;">
+            Severity: {{ severity }}
+        </span>
+    </p>
+    {% endif %}
+
+    {% for cve in results %}
+    {% include 'cve_card.html' %}
+    {% endfor %}
+</div>
+

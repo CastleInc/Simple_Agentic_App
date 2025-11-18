@@ -5,13 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b36974fc-689a-4951-975b-8949971e3f53" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/agent.py" beforeDir="false" afterPath="$PROJECT_DIR$/agent.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jinja_renderer.py" beforeDir="false" afterPath="$PROJECT_DIR$/jinja_renderer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mcp_server.py" beforeDir="false" afterPath="$PROJECT_DIR$/mcp_server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prompts.py" beforeDir="false" afterPath="$PROJECT_DIR$/prompts.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/streamlit_app.py" beforeDir="false" afterPath="$PROJECT_DIR$/streamlit_app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/cve_card.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/cve_card.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,7 +87,7 @@
       <option name="presentableId" value="Default" />
       <updated>1763339191272</updated>
       <workItem from="1763339193808" duration="3808000" />
-      <workItem from="1763399264424" duration="8353000" />
+      <workItem from="1763399264424" duration="19005000" />
     </task>
     <servers />
   </component>

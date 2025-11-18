@@ -1,0 +1,40 @@
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px; color: white; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <h2 style="margin: 0 0 25px 0; font-size: 28px;">📊 CVE Database Statistics</h2>
+
+    <!-- Total CVEs -->
+    <div style="background: rgba(255,255,255,0.15); padding: 25px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+        <h3 style="margin: 0; font-size: 48px; font-weight: bold;">{{ "{:,}".format(stats.total_cves) }}</h3>
+        <p style="margin: 8px 0 0 0; font-size: 16px; opacity: 0.9;">Total CVEs in Database</p>
+    </div>
+
+    <!-- Severity Breakdown -->
+    {% if stats.by_severity %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+        {% for sev in stats.by_severity %}
+        <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 10px;">
+            <h4 style="margin: 0; font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px;">{{ sev._id }}</h4>
+            <p style="margin: 10px 0 5px 0; font-size: 32px; font-weight: bold;">{{ "{:,}".format(sev.count) }}</p>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Avg CVSS: {{ "%.1f"|format(sev.avg_cvss) }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Additional Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+        {% if stats.cisa_kev_count %}
+        <div style="background: rgba(255,255,255,0.15); padding: 18px; border-radius: 10px;">
+            <p style="margin: 0; font-size: 14px; opacity: 0.8;">🎯 CISA KEV Listed</p>
+            <p style="margin: 8px 0 0 0; font-size: 28px; font-weight: bold;">{{ "{:,}".format(stats.cisa_kev_count) }}</p>
+        </div>
+        {% endif %}
+
+        {% if stats.with_exploits %}
+        <div style="background: rgba(255,255,255,0.15); padding: 18px; border-radius: 10px;">
+            <p style="margin: 0; font-size: 14px; opacity: 0.8;">💣 Known Exploits</p>
+            <p style="margin: 8px 0 0 0; font-size: 28px; font-weight: bold;">{{ "{:,}".format(stats.with_exploits) }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+

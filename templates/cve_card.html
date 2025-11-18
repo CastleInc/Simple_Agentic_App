@@ -1,183 +1,156 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        .cve-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-left: 5px solid {{ severity_color }};
-        }
-
-        .cve-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .cve-number {
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .severity-badge {
-            background: {{ severity_color }};
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        .cvss-score {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            margin: 10px 0;
-        }
-
-        .cvss-number {
-            font-size: 32px;
-            font-weight: bold;
-            color: {{ severity_color }};
-        }
-
-        .cve-title {
-            font-size: 18px;
-            color: #34495e;
-            margin: 15px 0;
-            font-weight: 600;
-        }
-
-        .cve-description {
-            color: #555;
-            line-height: 1.6;
-            margin: 15px 0;
-        }
-
-        .cve-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .detail-item {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        .detail-label {
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-
-        .detail-value {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .affected-products {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 15px;
-        }
-
-        .solution {
-            background: #d4edda;
-            border: 1px solid #28a745;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 15px;
-        }
-
-        .exploit-warning {
-            background: #f8d7da;
-            border: 1px solid #dc3545;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="cve-card">
-        <div class="cve-header">
-            <div class="cve-number">{{ cve_number }}</div>
-            <div class="severity-badge">{{ severity }}</div>
+<div style="border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; margin: 20px 0; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header with CVE Number and Severity Badge -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #f3f4f6;">
+        <div style="flex: 1;">
+            <h2 style="margin: 0; font-size: 28px; color: #1f2937; font-weight: bold;">{{ cve.cve_number or cve.cve_no or 'N/A' }}</h2>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 18px; font-weight: 500;">{{ cve.cve_title or 'No title available' }}</p>
         </div>
-
-        <div class="cve-title">{{ cve_title }}</div>
-
-        <div class="cvss-score">
-            <div style="font-size: 14px; color: #666;">CVSS Score</div>
-            <div class="cvss-number">{{ cvss_score }}</div>
-        </div>
-
-        <div class="cve-description">
-            {{ description }}
-        </div>
-
-        {% if exploit_exists %}
-        <div class="exploit-warning">
-            <span style="font-size: 24px;">⚠️</span>
-            <strong>Exploit Exists - High Priority</strong>
-        </div>
-        {% endif %}
-
-        {% if cisa_key %}
-        <div class="exploit-warning" style="background: #d1ecf1; border-color: #0c5460;">
-            <span style="font-size: 24px;">🔐</span>
-            <strong>CISA Known Exploited Vulnerability</strong>
-        </div>
-        {% endif %}
-
-        <div class="cve-details">
-            <div class="detail-item">
-                <div class="detail-label">Attack Type</div>
-                <div class="detail-value">{{ attack_type }}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Location</div>
-                <div class="detail-value">{{ location }}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Impact</div>
-                <div class="detail-value">{{ impact }}</div>
-            </div>
-            <div class="detail-item">
-                <div class="detail-label">Remediation Level</div>
-                <div class="detail-value">{{ remediation_level }}</div>
-            </div>
-        </div>
-
-        {% if affected_products %}
-        <div class="affected-products">
-            <strong>📦 Affected Products:</strong><br>
-            {{ affected_products }}
-        </div>
-        {% endif %}
-
-        {% if solution %}
-        <div class="solution">
-            <strong>✅ Solution:</strong><br>
-            {{ solution }}
-        </div>
+        {% if cve.severity %}
+        <span style="background: {{ cve.severity|format_severity_color }}; color: white; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; margin-left: 20px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+            {{ cve.severity }}
+        </span>
         {% endif %}
     </div>
-</body>
-</html>
 
+    <!-- CVSS Score and Key Metrics Row -->
+    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        {% if cve.cvss_score %}
+        <span style="background: {{ cve.cvss_score|format_cvss_color }}; color: white; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+            CVSS: {{ "%.1f"|format(cve.cvss_score) }}
+        </span>
+        {% endif %}
+
+        {% if cve.exploit_code_maturity and cve.exploit_code_maturity not in ['', 'No', 'N/A'] %}
+        <span style="background: #ef4444; color: white; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold;">
+            🎯 Exploit: {{ cve.exploit_code_maturity }}
+        </span>
+        {% endif %}
+
+        {% if cve.cisa_kev == 'Yes' %}
+        <span style="background: #dc2626; color: white; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: bold;">
+            ⚠️ CISA KEV
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Description Section -->
+    <div style="margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 8px; border-left: 4px solid {{ cve.severity|format_severity_color }};">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #374151; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">📋 Description</h4>
+        <p style="margin: 0; color: #4b5563; line-height: 1.6; font-size: 15px;">{{ cve.description or 'No description available' }}</p>
+    </div>
+
+    <!-- Attack Characteristics Grid -->
+    {% if cve.attack_vector or cve.attack_complexity or cve.privileges_required or cve.user_interaction or cve.scope %}
+    <div style="margin-bottom: 20px;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #374151; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">⚔️ Attack Characteristics</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            {% if cve.attack_vector %}
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">🎯 Attack Vector</div>
+                <div style="color: #1f2937; font-size: 15px; font-weight: 600;">{{ cve.attack_vector }}</div>
+            </div>
+            {% endif %}
+
+            {% if cve.attack_complexity %}
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">🔧 Attack Complexity</div>
+                <div style="color: #1f2937; font-size: 15px; font-weight: 600;">{{ cve.attack_complexity }}</div>
+            </div>
+            {% endif %}
+
+            {% if cve.privileges_required %}
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">🔐 Privileges Required</div>
+                <div style="color: #1f2937; font-size: 15px; font-weight: 600;">{{ cve.privileges_required }}</div>
+            </div>
+            {% endif %}
+
+            {% if cve.user_interaction %}
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">👤 User Interaction</div>
+                <div style="color: #1f2937; font-size: 15px; font-weight: 600;">{{ cve.user_interaction }}</div>
+            </div>
+            {% endif %}
+
+            {% if cve.scope %}
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">🌐 Scope</div>
+                <div style="color: #1f2937; font-size: 15px; font-weight: 600;">{{ cve.scope }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Impact Assessment Grid -->
+    {% if cve.confidentiality_impact or cve.integrity_impact or cve.availability_impact %}
+    <div style="margin-bottom: 20px;">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #374151; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">💥 Impact Assessment</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+            {% if cve.confidentiality_impact %}
+            {% set impact_color = "#dc2626" if cve.confidentiality_impact == "High" else "#f59e0b" if cve.confidentiality_impact == "Low" else "#84cc16" %}
+            <div style="background: #ffffff; border: 2px solid {{ impact_color }}; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">🔒 Confidentiality</div>
+                <div style="color: {{ impact_color }}; font-size: 15px; font-weight: 700;">{{ cve.confidentiality_impact }}</div>
+            </div>
+            {% endif %}
+
+            {% if cve.integrity_impact %}
+            {% set impact_color = "#dc2626" if cve.integrity_impact == "High" else "#f59e0b" if cve.integrity_impact == "Low" else "#84cc16" %}
+            <div style="background: #ffffff; border: 2px solid {{ impact_color }}; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">✅ Integrity</div>
+                <div style="color: {{ impact_color }}; font-size: 15px; font-weight: 700;">{{ cve.integrity_impact }}</div>
+            </div>
+            {% endif %}
+
+            {% if cve.availability_impact %}
+            {% set impact_color = "#dc2626" if cve.availability_impact == "High" else "#f59e0b" if cve.availability_impact == "Low" else "#84cc16" %}
+            <div style="background: #ffffff; border: 2px solid {{ impact_color }}; border-radius: 8px; padding: 12px;">
+                <div style="color: #6b7280; font-size: 11px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">⚡ Availability</div>
+                <div style="color: {{ impact_color }}; font-size: 15px; font-weight: 700;">{{ cve.availability_impact }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Details -->
+    {% if cve.remediation_level or cve.report_confidence or cve.exploit_code_maturity %}
+    <div style="margin-bottom: 20px; padding: 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fbbf24;">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #92400e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">ℹ️ Additional Details</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+            {% if cve.remediation_level %}
+            <div><span style="color: #78350f; font-size: 12px; font-weight: 600;">Remediation Level:</span> <span style="color: #92400e; font-size: 13px; font-weight: 700;">{{ cve.remediation_level }}</span></div>
+            {% endif %}
+
+            {% if cve.report_confidence %}
+            <div><span style="color: #78350f; font-size: 12px; font-weight: 600;">Report Confidence:</span> <span style="color: #92400e; font-size: 13px; font-weight: 700;">{{ cve.report_confidence }}</span></div>
+            {% endif %}
+
+            {% if cve.exploit_code_maturity and cve.exploit_code_maturity not in ['', 'No'] %}
+            <div><span style="color: #78350f; font-size: 12px; font-weight: 600;">Exploit Maturity:</span> <span style="color: #92400e; font-size: 13px; font-weight: 700;">{{ cve.exploit_code_maturity }}</span></div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Affected Products -->
+    {% if cve.affected_products %}
+    <div style="margin-bottom: 20px; padding: 15px; background: #fef2f2; border-radius: 8px; border: 1px solid #fca5a5;">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #991b1b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">🎯 Affected Products</h4>
+        <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.5; font-weight: 500;">{{ cve.affected_products }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    {% if cve.source_last_modified_date %}
+    <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #f3f4f6;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span style="color: #6b7280; font-size: 12px;"><strong>Last Modified:</strong> {{ cve.source_last_modified_date }}</span>
+            {% if cve.cisa_kev == 'Yes' %}
+            <span style="background: #dc2626; color: white; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: bold;">⚠️ Listed in CISA KEV Catalog</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>

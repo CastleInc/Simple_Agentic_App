@@ -1,7 +1,19 @@
-openai>=1.0.0
-pymongo>=4.6.0
+# Core dependencies
 python-dotenv>=1.0.0
+pymongo>=4.6.0
+jinja2>=3.1.0
+streamlit>=1.28.0
+nest-asyncio>=1.5.8
+
+# MCP (Model Context Protocol)
 mcp>=0.9.0
 fastmcp>=2.13.0
-streamlit>=1.28.0
-jinja2>=3.1.0
+
+# LlamaIndex - Core framework (no OpenAI dependencies)
+llama-index-core>=0.13.0
+llama-index-llms-openai-like>=0.4.0
+llama-index-agent-openai>=0.2.0
+llama-index-tools-mcp>=0.4.3
+
+# OpenAI SDK (used by LlamaIndex OpenAILike for compatibility)
+openai>=1.109.0
